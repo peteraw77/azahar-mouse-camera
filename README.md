@@ -6,26 +6,69 @@ Generic mouse-to-stick remappers turn mouse speed into stick position, which mak
 
 It runs on Windows only, and has only been tested with MH4U.
 
-## Using the exe
+## Installing the packaged version
 
-If you have the packaged build, you don't need Python. Unzip the folder anywhere, and keep everything in it together. Where this README says `python -m mousecam`, use these instead:
+The packaged version doesn't need Python. There's no installer for the tool itself: it's a zip you unpack, plus one driver to install. To run from source instead, skip to [Setup](#setup).
+
+### 1. Unpack the zip
+
+Download `azahar-mouse-camera-windows-x64.zip` from the [latest release](https://github.com/peteraw77/azahar-mouse-camera/releases/latest), and unzip it to a folder you own, such as `Documents` or `C:\Games`. To make the zip yourself, see [Building the exe](#building-the-exe).
+
+Avoid `Program Files`, because the tool saves its settings and calibration to `config.toml` in the same folder. Keep everything in the folder together, because the exe needs its `_internal` folder.
+
+### 2. Install the ViGEmBus driver
+
+The virtual controller needs this driver. To check whether you already have it, run this in PowerShell and look for `Running`:
+
+```powershell
+Get-Service ViGEmBus
+```
+
+If it's missing, run the installer included in the unpacked folder, and approve the Windows permission prompt:
+
+```text
+_internal\vgamepad\win\vigem\install\x64\ViGEmBusSetup_x64.msi
+```
+
+### 3. Set up Azahar
+
+Follow steps 4 to 7 of [Setup](#setup), which turn on New 3DS mode and bind the controls. Those steps use the bind helper, so double-click `bind.bat` wherever they say `python -m mousecam bind`.
+
+The included `config.toml` already has calibration results and sensitivities, so you don't need to calibrate before trying it.
+
+## Using the packaged version
+
+1. Start Azahar and load your game.
+2. Double-click `azahar-mouse-camera.exe`. Wait for `Mouse camera: OFF`, which takes a few seconds.
+3. Click into Azahar, then press **F8** to turn the mouse camera on.
+4. Press **F8** to turn it off, or **Ctrl+F8** to quit.
+
+Close `bind.bat` first if it's open, because only one copy of the tool can run at a time. [Using the mouse camera](#using-the-mouse-camera) has more on how it behaves.
 
 | To do this | Use |
 | --- | --- |
 | Run the mouse camera | Double-click `azahar-mouse-camera.exe` |
-| Bind controls (`bind`) | Double-click `bind.bat` |
-| Calibrate (`calibrate`) | Double-click `calibrate.bat` |
-| Pass options, such as `--mode velocity` | Run `azahar-mouse-camera.exe` from a terminal with the same options |
+| Bind controls | Double-click `bind.bat` |
+| Calibrate | Double-click `calibrate.bat`, and see [Calibration](#calibration) |
+| Change settings | Edit `config.toml` beside the exe, then restart the tool. See [Settings](#settings) |
+| Pass options, such as `--mode velocity` | Run `azahar-mouse-camera.exe` from a terminal, with the same options as `python -m mousecam` |
 
-Settings are in `config.toml`, next to the exe.
+### If it doesn't start
 
-You still need the ViGEmBus driver and the Azahar setup below. If the driver is missing, its installer is in the folder, at `_internal\vgamepad\win\vigem\install\x64\ViGEmBusSetup_x64.msi`.
+- **Windows SmartScreen blocks it:** the exe isn't code-signed, so this can happen. Click **More info**, then **Run anyway**. Antivirus software may flag it too.
+- **`Could not create the virtual pad`:** the ViGEmBus driver is probably missing, so see step 2 above.
+- **`already running in another window`:** close the other copy, which may be `bind.bat` or `calibrate.bat`.
+- **`Can't register F8`:** another program is using that hotkey. Change `toggle` or `quit` under `[hotkeys]` in `config.toml`.
 
-The exe isn't code-signed, so Windows SmartScreen may warn about it, and antivirus software may flag it. If SmartScreen blocks it, click **More info**, then **Run anyway**.
+### Updating and uninstalling
+
+To update, unpack the new zip to a new folder. To keep your settings, copy your old `config.toml` over the new one, but check the new one first in case it has settings yours lacks: the tool uses a built-in default for anything missing.
+
+To uninstall, delete the folder. If nothing else needs the driver, you can also remove **ViGEm Bus Driver** in Windows' installed apps list. Other controller tools may rely on it.
 
 ## Setup
 
-If you're using the exe, skip step 2.
+These steps are for running from source. If you've installed the packaged version, you've already done steps 1 and 2, so start at step 4.
 
 ### 1. ViGEmBus driver
 
@@ -198,4 +241,4 @@ powershell -ExecutionPolicy Bypass -File packaging\build.ps1
 
 ## License
 
-Public domain, under [the Unlicense](LICENSE).
+This project's code is public domain, under [the Unlicense](LICENSE). The packaged version also includes third-party software under its own licenses: Python, vgamepad, ViGEmClient and ViGEmBus. Their notices are in its `licenses` folder.
