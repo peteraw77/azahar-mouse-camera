@@ -71,6 +71,15 @@ def last_error(what: str) -> Win32Error:
     return Win32Error(f"{what} failed: {ctypes.WinError(ctypes.get_last_error()).strerror}")
 
 
+def started_by_double_click() -> bool:
+    """True if this program has its console to itself, so the window closes when it
+    exits. Started from a terminal, the shell shares the console too."""
+    kernel32.GetConsoleProcessList.argtypes = [POINTER(wintypes.DWORD), wintypes.DWORD]
+    kernel32.GetConsoleProcessList.restype = wintypes.DWORD
+    processes = (wintypes.DWORD * 4)()
+    return kernel32.GetConsoleProcessList(processes, len(processes)) == 1
+
+
 def make_dpi_aware() -> None:
     """Use real pixels. Otherwise, with display scaling on, Windows scales the
     coordinates we pass, and a 1x1 cursor lock can cover more than one pixel."""

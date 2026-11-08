@@ -78,9 +78,12 @@ mousecam/
   cursor.py        # hide/clip/release
 tests/
   test_mapper.py   # uses a simulated camera model
+packaging/         # PyInstaller build: launcher, build.ps1, .bat helpers
 config.toml
 README.md
 ```
+
+The packaged exe is a PyInstaller folder build, made with `packaging/build.ps1`. Its `config.toml` sits beside the exe, and double-clicking it means `run`.
 
 Keep `mapper.py` free of side effects: deltas + dt + calibration in, stick values out. Test it against a **simulated camera** (threshold, max rate, ramp, 30 fps sampling). Check that N counts of mouse movement produce N × sensitivity degrees of rotation, and that nothing drifts after input stops.
 

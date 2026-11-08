@@ -17,7 +17,7 @@ min_deflection = 0.0  # smallest stick value sent; raise it if slow movements ge
 
 [budget]
 sensitivity_x = 0.03  # degrees per mouse count; higher = faster camera
-sensitivity_y = 0.09  # the same for vertical, in pitch's nominal degrees
+sensitivity_y = 0.08  # the same for vertical, in pitch's nominal degrees
 ramp_ms = 164.0       # camera's time to reach full speed; fitted to measured pulses
 fade_ms = 80.0        # how fast that speed-up fades after release; also fitted
 frame_ms = 33.4       # how often the game reads the stick (about 30 fps)

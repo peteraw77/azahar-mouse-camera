@@ -6,7 +6,26 @@ Generic mouse-to-stick remappers turn mouse speed into stick position, which mak
 
 It runs on Windows only, and has only been tested with MH4U.
 
+## Using the exe
+
+If you have the packaged build, you don't need Python. Unzip the folder anywhere, and keep everything in it together. Where this README says `python -m mousecam`, use these instead:
+
+| To do this | Use |
+| --- | --- |
+| Run the mouse camera | Double-click `azahar-mouse-camera.exe` |
+| Bind controls (`bind`) | Double-click `bind.bat` |
+| Calibrate (`calibrate`) | Double-click `calibrate.bat` |
+| Pass options, such as `--mode velocity` | Run `azahar-mouse-camera.exe` from a terminal with the same options |
+
+Settings are in `config.toml`, next to the exe.
+
+You still need the ViGEmBus driver and the Azahar setup below. If the driver is missing, its installer is in the folder, at `_internal\vgamepad\win\vigem\install\x64\ViGEmBusSetup_x64.msi`.
+
+The exe isn't code-signed, so Windows SmartScreen may warn about it, and antivirus software may flag it. If SmartScreen blocks it, click **More info**, then **Run anyway**.
+
 ## Setup
+
+If you're using the exe, skip step 2.
 
 ### 1. ViGEmBus driver
 
@@ -166,6 +185,15 @@ Settings are in [config.toml](config.toml). Restart the tool after changing them
 
 ```powershell
 .\.venv\Scripts\python.exe -m pytest
+```
+
+## Building the exe
+
+This puts the exe folder and a zip of it in `dist`. The current `config.toml` is copied in as its default settings.
+
+```powershell
+.\.venv\Scripts\python.exe -m pip install -r requirements-dev.txt
+powershell -ExecutionPolicy Bypass -File packaging\build.ps1
 ```
 
 ## License

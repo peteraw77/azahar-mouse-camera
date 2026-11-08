@@ -7,12 +7,14 @@ from __future__ import annotations
 
 import os
 import re
+import sys
 import tomllib
 from dataclasses import dataclass, field
 from pathlib import Path
 
 from mousecam.pad import BUTTON_NAMES
 
+CONFIG_NAME = "config.toml"
 MODES = ("budget", "velocity")
 MOUSE_BUTTONS = ("left", "right", "middle", "x1", "x2")
 
@@ -22,6 +24,14 @@ CALIBRATION_NOTE = "# Written by `python -m mousecam calibrate`. Rerun it rather
 
 class ConfigError(ValueError):
     """config.toml can't be read or has an invalid value."""
+
+
+def default_config_path() -> Path:
+    """Next to the exe in the packaged build, wherever it was started from. Otherwise
+    in the current folder, which is the project folder when run from source."""
+    if getattr(sys, "frozen", False):
+        return Path(sys.executable).parent / CONFIG_NAME
+    return Path(CONFIG_NAME)
 
 
 @dataclass(frozen=True)
@@ -41,7 +51,7 @@ class VelocityConfig:
 @dataclass(frozen=True)
 class BudgetConfig:
     sensitivity_x: float = 0.03  # degrees per mouse count
-    sensitivity_y: float = 0.09  # in pitch's nominal degrees
+    sensitivity_y: float = 0.08  # in pitch's nominal degrees
     ramp_ms: float = 164.0  # fitted to measured pulses
     fade_ms: float = 80.0  # fitted to measured pulses
     frame_ms: float = 33.4  # two 3DS screen refreshes at 59.83 Hz
