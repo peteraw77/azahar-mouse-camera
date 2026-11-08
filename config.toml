@@ -1,0 +1,44 @@
+# Settings for MouseCamera3DS. Restart the tool after changing this file.
+
+mode = "budget"       # "budget" (mouse distance = camera angle) or "velocity" (baseline)
+invert_y = false      # true flips the vertical camera direction
+debug = false         # true prints a live line with the stick deflection
+tick_hz = 500         # how often the stick is updated (60 to 1000)
+
+[hotkeys]
+toggle = "F8"         # turns the mouse camera on and off
+quit = "Ctrl+F8"      # exits the tool
+
+[velocity]
+full_speed_x = 3000.0 # mouse counts/s that give full stick; lower = more sensitive
+full_speed_y = 1000.0
+smoothing_ms = 40.0   # higher = smoother, but the camera lags more
+min_deflection = 0.0  # smallest stick value sent; raise it if slow movements get lost
+
+[budget]
+sensitivity_x = 0.03  # degrees per mouse count; higher = faster camera
+sensitivity_y = 0.09  # the same for vertical, in pitch's nominal degrees
+ramp_ms = 164.0       # camera's time to reach full speed; fitted to measured pulses
+fade_ms = 80.0        # how fast that speed-up fades after release; also fitted
+frame_ms = 33.4       # how often the game reads the stick (about 30 fps)
+max_carry_ms = 150.0  # longest the camera keeps turning after the mouse stops; lower = snappier,
+                      # but fast flicks turn less than the distance moved, because the excess is dropped
+
+# Written by `python -m mousecam calibrate`. Rerun it rather than editing below.
+[calibration.yaw]
+deadzone = 0.56
+max_rate = 169.572
+curve = [[0.6, 165.015], [0.8, 167.189], [1.0, 169.572]]
+
+[calibration.pitch]
+deadzone = 0.56
+max_rate = 38.876
+range_deg = 90.0
+curve = [[0.6, 40.531], [1.0, 38.876]]
+
+[calibration.pulse]
+registered_ms = [16, 33, 50, 100]
+missed_ms = []
+trains = [[100.0, 100.0, 0.58], [66.7, 66.7, 0.421], [33.3, 33.3, 0.625]]
+angles = [[200.0, 21.31], [133.3, 10.06], [100.0, 5.907], [66.7, 2.809]]
+coasts = false
