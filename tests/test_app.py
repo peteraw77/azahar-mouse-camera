@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from mousecam.app import QUIT, TOGGLE, _loop, make_mapper
+from mousecam.app import QUIT, TOGGLE, _loop, make_button_mapper, make_mapper
 from mousecam.config import AxisCalibration, BudgetConfig, Calibration, Config, ConfigError, load_config
 from mousecam.mapper import BudgetMapper, VelocityMapper
 
@@ -82,14 +82,30 @@ class FlickOnce(FakeMouse):
 class Recorder:
     """Stands in for the pad and the cursor lock."""
 
-    def __init__(self):
+    def __init__(self, clicks=(), physically_down=()):
         self.sticks = []
+        self.button_changes = []
+        self.clicks = list(clicks)  # (seconds from start, mouse button, pressed)
+        self.physically_down = set(physically_down)
+        self.start = time.perf_counter()
 
     def set_right_stick(self, x, y):
         self.sticks.append((x, y))
 
     def centre(self):
         self.sticks.append((0.0, 0.0))
+
+    def set_button(self, name, pressed):
+        self.button_changes.append((name, pressed))
+
+    def take_button_events(self):
+        now = time.perf_counter() - self.start
+        due = [(button, pressed) for when, button, pressed in self.clicks if when <= now]
+        self.clicks = [click for click in self.clicks if click[0] > now]
+        return due
+
+    def is_down(self, button):
+        return button in self.physically_down
 
     def lock(self):
         pass
@@ -101,12 +117,56 @@ class Recorder:
         pass
 
 
+def run_loop(script, clicks=(), physically_down=()):
+    config = Config()
+    hotkeys = FakeHotkeys(script)
+    recorder = Recorder(clicks, physically_down)
+    _loop(config, make_mapper(config), recorder, FakeMouse(), hotkeys, recorder, make_button_mapper(config))
+    return recorder
+
+
+def test_clicks_press_pad_buttons_while_on():
+    recorder = run_loop(
+        [(0.0, TOGGLE), (0.4, QUIT)],
+        clicks=[(0.05, "left", True), (0.15, "left", False)],
+        physically_down={"left"},
+    )
+    assert recorder.button_changes == [("a", True), ("a", False)]
+
+
+def test_clicks_while_off_do_nothing():
+    recorder = run_loop(
+        [(0.2, QUIT)],
+        clicks=[(0.05, "left", True), (0.1, "left", False)],
+    )
+    assert recorder.button_changes == []
+
+
+def test_turning_off_releases_a_held_button():
+    recorder = run_loop(
+        [(0.0, TOGGLE), (0.15, TOGGLE), (0.25, QUIT)],
+        clicks=[(0.05, "right", True)],
+        physically_down={"right"},
+    )
+    assert recorder.button_changes == [("b", True), ("b", False)]
+
+
+def test_a_button_is_released_if_its_release_message_never_arrives():
+    """Focus changing mid-click can send the release to another window."""
+    recorder = run_loop(
+        [(0.0, TOGGLE), (0.4, QUIT)],
+        clicks=[(0.02, "left", True)],
+        physically_down=(),  # the physical button is already up
+    )
+    assert recorder.button_changes == [("a", True), ("a", False)]
+
+
 def test_debug_reports_the_peak_queue(capsys):
     budget = BudgetConfig(sensitivity_x=0.05, sensitivity_y=0.05)
     config = Config(mode="budget", debug=True, budget=budget, calibration=MEASURED)
     hotkeys = FakeHotkeys([(0.0, TOGGLE), (0.2, TOGGLE), (0.25, QUIT)])
     recorder = Recorder()
-    _loop(config, make_mapper(config), recorder, FlickOnce(hotkeys), hotkeys, recorder)
+    _loop(config, make_mapper(config), recorder, FlickOnce(hotkeys), hotkeys, recorder, make_button_mapper(config))
     output = capsys.readouterr().out
     assert "peak pending while on: yaw=25.5 pitch=5.0" in output
     assert (1.0, 1.0) in recorder.sticks

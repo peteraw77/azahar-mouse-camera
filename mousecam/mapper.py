@@ -6,6 +6,7 @@ BudgetMapper is the main mode. VelocityMapper is the baseline to compare it with
 from __future__ import annotations
 
 import math
+from collections import deque
 from dataclasses import dataclass
 
 # Below this smoothed speed (as a fraction of full speed) the stick snaps to
@@ -74,6 +75,66 @@ class VelocityMapper:
         floor = self._settings.min_deflection
         scale = (floor + (1.0 - floor) * magnitude) / magnitude
         return self._x * scale, self._y * scale
+
+
+class ButtonMapper:
+    """Turns mouse button events into pad button presses the game can see.
+
+    The game reads input once a frame, so a very quick click could press and release
+    between two reads and go unnoticed. So each press and each release lasts at least
+    min_state_s. Changes that arrive sooner wait their turn, so a quick double-click
+    stays two presses instead of merging into one.
+    """
+
+    def __init__(self, mapping: dict[str, str], min_state_s: float) -> None:
+        """mapping goes from mouse button name to pad button name."""
+        self._mapping = mapping
+        self._min_state_s = min_state_s
+        self._held: set[str] = set()  # mouse buttons
+        self._down: set[str] = set()  # pad buttons, as last reported
+        self._queues: dict[str, deque[bool]] = {pad: deque() for pad in mapping.values()}
+        self._next_change_s: dict[str, float] = {pad: 0.0 for pad in mapping.values()}
+
+    @property
+    def held(self) -> set[str]:
+        """The mapped mouse buttons currently held."""
+        return set(self._held)
+
+    def mouse_event(self, button: str, pressed: bool) -> None:
+        pad = self._mapping.get(button)
+        if pad is None:
+            return
+        if pressed:
+            self._held.add(button)
+        else:
+            self._held.discard(button)
+        # Several mouse buttons can share a pad button: it's down while any of them is.
+        wanted = any(self._mapping[held] == pad for held in self._held)
+        queue = self._queues[pad]
+        latest = queue[-1] if queue else pad in self._down
+        if wanted != latest:
+            queue.append(wanted)
+
+    def tick(self, now: float) -> list[tuple[str, bool]]:
+        """Return the (pad button, pressed) changes due at this time."""
+        changes = []
+        for pad, queue in self._queues.items():
+            if queue and now >= self._next_change_s[pad]:
+                pressed = queue.popleft()
+                self._next_change_s[pad] = now + self._min_state_s
+                (self._down.add if pressed else self._down.discard)(pad)
+                changes.append((pad, pressed))
+        return changes
+
+    def release_all(self) -> list[tuple[str, bool]]:
+        """Forget everything at once, and return the releases to send."""
+        changes = [(pad, False) for pad in sorted(self._down)]
+        self._held.clear()
+        self._down.clear()
+        for pad, queue in self._queues.items():
+            queue.clear()
+            self._next_change_s[pad] = 0.0
+        return changes
 
 
 @dataclass(frozen=True)

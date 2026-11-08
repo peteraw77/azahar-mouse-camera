@@ -24,6 +24,16 @@ frame_ms = 33.4       # how often the game reads the stick (about 30 fps)
 max_carry_ms = 150.0  # longest the camera keeps turning after the mouse stops; lower = snappier,
                       # but fast flicks turn less than the distance moved, because the excess is dropped
 
+# Which pad button each mouse button presses while the camera is on. Bind these pad
+# buttons to game buttons in Azahar. Names: a b x y lb rb lt rt back start ls rs, or "" for none.
+[buttons]
+left = "a"
+right = "b"
+middle = "x"
+x1 = "y"              # back side button
+x2 = "lb"             # forward side button
+min_state_ms = 70.0   # shortest press or release, so the game can't miss a quick click
+
 # Written by `python -m mousecam calibrate`. Rerun it rather than editing below.
 [calibration.yaw]
 deadzone = 0.56

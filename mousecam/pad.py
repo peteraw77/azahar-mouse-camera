@@ -1,10 +1,27 @@
-"""Virtual Xbox 360 pad. Only the right stick is ever used."""
+"""Virtual Xbox 360 pad: the right stick for the camera, plus buttons for mouse clicks."""
 
 from __future__ import annotations
 
 import time
 
 AXIS_MAX = 32767
+TRIGGER_MAX = 255
+
+# Names usable in config.toml, and the vgamepad constant behind each one.
+BUTTONS = {
+    "a": "XUSB_GAMEPAD_A",
+    "b": "XUSB_GAMEPAD_B",
+    "x": "XUSB_GAMEPAD_X",
+    "y": "XUSB_GAMEPAD_Y",
+    "lb": "XUSB_GAMEPAD_LEFT_SHOULDER",
+    "rb": "XUSB_GAMEPAD_RIGHT_SHOULDER",
+    "back": "XUSB_GAMEPAD_BACK",
+    "start": "XUSB_GAMEPAD_START",
+    "ls": "XUSB_GAMEPAD_LEFT_THUMB",
+    "rs": "XUSB_GAMEPAD_RIGHT_THUMB",
+}
+TRIGGERS = ("lt", "rt")
+BUTTON_NAMES = (*BUTTONS, *TRIGGERS)
 
 # Settling a new pad. A report only gets through if the device has finished
 # starting up and the report differs from the last one, so a plain centre() at
@@ -38,6 +55,7 @@ class Pad:
             import vgamepad
 
             self._pad = vgamepad.VX360Gamepad()
+            self._button_flags = {name: getattr(vgamepad.XUSB_BUTTON, flag) for name, flag in BUTTONS.items()}
         except (ImportError, OSError, RuntimeError) as exc:
             raise PadError(
                 f"Could not create the virtual pad ({exc}). "
@@ -60,6 +78,21 @@ class Pad:
     def centre(self) -> None:
         self.set_right_stick(0.0, 0.0)
 
+    def set_button(self, name: str, pressed: bool) -> None:
+        """Press or release a button or trigger, by a name from BUTTON_NAMES."""
+        value = TRIGGER_MAX if pressed else 0
+        if name == "lt":
+            self._pad.left_trigger(value)
+        elif name == "rt":
+            self._pad.right_trigger(value)
+        elif pressed:
+            self._pad.press_button(self._button_flags[name])
+        else:
+            self._pad.release_button(self._button_flags[name])
+        self._pad.update()
+
     def close(self) -> None:
-        self.centre()
+        """Release everything, so nothing can stay stuck on as the pad goes away."""
+        self._pad.reset()
+        self._pad.update()
         del self._pad

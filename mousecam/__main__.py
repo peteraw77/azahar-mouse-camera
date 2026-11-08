@@ -55,6 +55,13 @@ def main() -> int:
         metavar="SECONDS",
         help="time to switch to Azahar before the beeps (default: 6)",
     )
+    bind.add_argument(
+        "--config",
+        type=Path,
+        default=Path("config.toml"),
+        metavar="FILE",
+        help="settings file, for the mouse button mapping (default: config.toml)",
+    )
     args = parser.parse_args()
 
     try:
@@ -65,7 +72,7 @@ def main() -> int:
         if args.command == "bind":
             from mousecam.bind import run_bind
 
-            run_bind(args.prep)
+            run_bind(args.prep, load_config(args.config).buttons.mapping())
         elif args.command == "calibrate":
             from mousecam.calibrate import run_calibration
 

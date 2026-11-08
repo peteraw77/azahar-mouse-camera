@@ -50,6 +50,7 @@ The values are in `config.toml`, filled by the calibration tool. In summary:
 - Options for invert Y, separate X/Y sensitivity, and choice of mode (`budget` / `velocity`)
 - A **bind helper** command that slowly sweeps the right stick up/down/left/right on cue, so Peter can bind C-Stick directions in Azahar's controls dialog. Azahar has to see movement to register a binding.
 - Console output: active mode, on/off state, and an optional debug line (pending budget, current deflection)
+- **Mouse buttons** press virtual pad buttons while the camera is on, mapped in `config.toml` and bound to game buttons in Azahar. They're read from the window under the locked cursor, not raw input. Each press and release lasts at least two frames so the game can't miss one. Turning off or quitting releases everything.
 
 ## Calibration tool (`python -m mousecam calibrate`)
 
@@ -96,5 +97,5 @@ Finish each milestone before starting the next, and stop at each in-game check f
 ## Non-goals (v1)
 
 - No modifying Azahar and no reading emulator memory. A closed loop on the real camera angle would be neat, but it's a later idea.
-- No keyboard→button remapping. Peter binds movement and buttons directly in Azahar with the keyboard; this tool only handles the camera.
+- No keyboard→button remapping. Peter binds movement and buttons directly in Azahar with the keyboard. Besides the camera, this tool only handles mouse buttons, which Azahar can't read itself.
 - No GUI beyond the console, at least for v1.

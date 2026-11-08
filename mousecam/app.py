@@ -1,4 +1,4 @@
-"""The run command: mouse in, right stick out, until the quit hotkey."""
+"""The run command: mouse in, right stick and buttons out, until the quit hotkey."""
 
 from __future__ import annotations
 
@@ -9,7 +9,14 @@ import time
 from mousecam.config import Config, ConfigError
 from mousecam.cursor import CursorLock
 from mousecam.hotkeys import Hotkeys
-from mousecam.mapper import AxisSettings, BudgetMapper, BudgetSettings, VelocityMapper, VelocitySettings
+from mousecam.mapper import (
+    AxisSettings,
+    BudgetMapper,
+    BudgetSettings,
+    ButtonMapper,
+    VelocityMapper,
+    VelocitySettings,
+)
 from mousecam.pad import Pad
 from mousecam.raw_input import RawMouse
 from mousecam.win32 import make_dpi_aware, winmm
@@ -20,8 +27,13 @@ TIMER_RESOLUTION_MS = 1
 SLOW_WORK_PERIOD_S = 0.1  # how often to reapply the cursor lock and print debug
 
 
+def make_button_mapper(config: Config) -> ButtonMapper:
+    return ButtonMapper(config.buttons.mapping(), config.buttons.min_state_ms / 1000)
+
+
 def run_app(config: Config) -> None:
     mapper = make_mapper(config)
+    buttons = make_button_mapper(config)
     make_dpi_aware()
     signal.signal(signal.SIGBREAK, _interrupt)  # closing the console window
     winmm.timeBeginPeriod(TIMER_RESOLUTION_MS)
@@ -36,16 +48,18 @@ def run_app(config: Config) -> None:
                 print(f"Mode: {config.mode}")
                 print(f"{config.hotkeys.toggle} turns the mouse camera on and off.")
                 print(f"{config.hotkeys.quit} quits.")
+                names = ", ".join(f"{mouse_button}={name}" for mouse_button, name in config.buttons.mapping().items())
+                print(f"Mouse buttons, while on: {names or 'none'}")
                 print("Mouse camera: OFF")
                 try:
-                    _loop(config, mapper, pad, mouse, hotkeys, cursor)
+                    _loop(config, mapper, pad, mouse, hotkeys, cursor, buttons)
                 except KeyboardInterrupt:
                     pass
         finally:
             pad.close()
     finally:
         winmm.timeEndPeriod(TIMER_RESOLUTION_MS)
-    print("Stopped. Cursor released and stick centred.")
+    print("Stopped. Cursor released, stick centred and buttons released.")
 
 
 def make_mapper(config: Config) -> BudgetMapper | VelocityMapper:
@@ -92,7 +106,7 @@ def _interrupt(signum, frame) -> None:
     raise KeyboardInterrupt
 
 
-def _loop(config, mapper, pad, mouse, hotkeys, cursor) -> None:
+def _loop(config, mapper, pad, mouse, hotkeys, cursor, buttons) -> None:
     period = 1 / config.tick_hz
     active = False
     stick = (0.0, 0.0)
@@ -108,6 +122,9 @@ def _loop(config, mapper, pad, mouse, hotkeys, cursor) -> None:
             active = not active
             mapper.reset()
             mouse.take()  # drop movement from while the camera was off
+            cursor.take_button_events()
+            for button, pressed in buttons.release_all():
+                pad.set_button(button, pressed)
             stick = (0.0, 0.0)
             pad.centre()
             if active:
@@ -134,9 +151,18 @@ def _loop(config, mapper, pad, mouse, hotkeys, cursor) -> None:
                 peak_y = max(peak_y, abs(stick[1]))
             peak_yaw = max(peak_yaw, abs(mapper.pending[0]))
             peak_pitch = max(peak_pitch, abs(mapper.pending[1]))
+            for mouse_button, pressed in cursor.take_button_events():
+                buttons.mouse_event(mouse_button, pressed)
+            for button, pressed in buttons.tick(now):
+                pad.set_button(button, pressed)
             if now >= next_slow_work:
                 next_slow_work = now + SLOW_WORK_PERIOD_S
                 cursor.refresh()
+                # If focus changes mid-click, the release can go to another window, which
+                # would leave an attack stuck on. So believe the physical button.
+                for mouse_button in buttons.held:
+                    if not cursor.is_down(mouse_button):
+                        buttons.mouse_event(mouse_button, False)
                 if config.debug:
                     yaw, pitch = mapper.pending
                     print(

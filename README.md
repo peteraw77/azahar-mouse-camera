@@ -62,6 +62,18 @@ Start a quest, or go anywhere you can move the camera. In the bind window, press
 
 If it doesn't, look through the in-game options for a camera control setting.
 
+### 7. Optional: mouse buttons
+
+While the camera is on, mouse buttons can press buttons on the virtual pad, which you then bind to game buttons in Azahar. `config.toml` sets which pad button each one presses. Keep your other controls bound however you like, because Azahar lets one profile mix keyboard, controllers and the virtual pad.
+
+Bind them one at a time:
+
+1. Start `python -m mousecam bind`. Its menu lists a number key for each mouse button.
+2. In **Emulation > Configure > Controls**, find the game button you want. Then press that number in the bind window. You have 6 seconds, followed by two beeps.
+3. Click the game button in Azahar on the first beep. The bind window presses the pad button right after the second beep, and Azahar fills in the binding.
+
+These bindings only work while the tool is running, since that's when the virtual pad exists.
+
 ## Using the mouse camera
 
 Quit the bind helper first with `q`, because only one copy of the tool can run at a time. Then, from the project folder:
@@ -77,7 +89,7 @@ It takes a few seconds to start. Wait for `Mouse camera: OFF`, then click into A
 | F8 | Turn the mouse camera on or off |
 | Ctrl+F8 | Quit |
 
-While the camera is on, the cursor is hidden and locked, and clicks don't reach Azahar's touchscreen. Keyboard input still goes to Azahar. Turning it off or quitting frees the cursor and centres the stick.
+While the camera is on, the cursor is hidden and locked, and clicks don't reach Azahar's touchscreen: they press pad buttons instead, if you've bound any. Keyboard input still goes to Azahar. Turning it off or quitting frees the cursor, centres the stick and releases the buttons, and clicks work as normal again, including on the touchscreen.
 
 There are two modes. Set one with `mode` in `config.toml`, or try one for a single run:
 
@@ -147,6 +159,8 @@ Settings are in [config.toml](config.toml). Restart the tool after changing them
 | `budget.ramp_ms`, `fade_ms` | How the camera speeds up, fitted to measurements. Change these if turns land consistently short or long. |
 | `budget.frame_ms` | How often the game reads the stick. |
 | `budget.max_carry_ms` | The longest the camera keeps turning after the mouse stops. Lower is snappier, but fast flicks turn less than the distance moved, because the excess is dropped. |
+| `buttons.left`, `right`, `middle`, `x1`, `x2` | Which pad button each mouse button presses: `a`, `b`, `x`, `y`, `lb`, `rb`, `lt`, `rt`, `back`, `start`, `ls` or `rs`, or `""` for none. `x1` and `x2` are the side buttons. If you change one, bind the new pad button in Azahar. |
+| `buttons.min_state_ms` | The shortest press or release, so the game can't miss a quick click. |
 
 ## Tests
 

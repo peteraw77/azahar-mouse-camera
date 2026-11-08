@@ -11,7 +11,10 @@ import tomllib
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from mousecam.pad import BUTTON_NAMES
+
 MODES = ("budget", "velocity")
+MOUSE_BUTTONS = ("left", "right", "middle", "x1", "x2")
 
 
 CALIBRATION_NOTE = "# Written by `python -m mousecam calibrate`. Rerun it rather than editing below."
@@ -43,6 +46,22 @@ class BudgetConfig:
     fade_ms: float = 80.0  # fitted to measured pulses
     frame_ms: float = 33.4  # two 3DS screen refreshes at 59.83 Hz
     max_carry_ms: float = 150.0  # the longest the camera can keep turning after the mouse stops
+
+
+@dataclass(frozen=True)
+class ButtonsConfig:
+    """Which pad button each mouse button presses. An empty name means none."""
+
+    left: str = "a"
+    right: str = "b"
+    middle: str = "x"
+    x1: str = "y"
+    x2: str = "lb"
+    min_state_ms: float = 70.0  # two frames, so the game can't miss a quick click
+
+    def mapping(self) -> dict[str, str]:
+        """Mouse button name to pad button name, leaving out any that are unused."""
+        return {button: getattr(self, button) for button in MOUSE_BUTTONS if getattr(self, button)}
 
 
 @dataclass(frozen=True)
@@ -83,6 +102,7 @@ class Config:
     hotkeys: HotkeyConfig = field(default_factory=HotkeyConfig)
     velocity: VelocityConfig = field(default_factory=VelocityConfig)
     budget: BudgetConfig = field(default_factory=BudgetConfig)
+    buttons: ButtonsConfig = field(default_factory=ButtonsConfig)
     calibration: Calibration = field(default_factory=Calibration)
 
 
@@ -103,9 +123,10 @@ def parse_config(data: dict) -> Config:
     hotkeys = HotkeyConfig(**_section(data, "hotkeys", HotkeyConfig))
     velocity = VelocityConfig(**_section(data, "velocity", VelocityConfig))
     budget = BudgetConfig(**_section(data, "budget", BudgetConfig))
+    buttons = ButtonsConfig(**_section(data, "buttons", ButtonsConfig))
     calibration = _parse_calibration(data)
     _reject_unknown(data, Config, "top level")
-    config = Config(hotkeys=hotkeys, velocity=velocity, budget=budget, calibration=calibration, **data)
+    config = Config(hotkeys=hotkeys, velocity=velocity, budget=budget, buttons=buttons, calibration=calibration, **data)
     _validate(config)
     return config
 
@@ -257,6 +278,13 @@ def _validate(config: Config) -> None:
         _require_number(f"budget.{name}", value)
         if value <= 0:
             raise ConfigError(f"budget.{name} must be above 0")
+    for button in MOUSE_BUTTONS:
+        value = getattr(config.buttons, button)
+        if value != "" and value not in BUTTON_NAMES:
+            raise ConfigError(f"buttons.{button} must be one of {', '.join(BUTTON_NAMES)}, or \"\" for none")
+    _require_number("buttons.min_state_ms", config.buttons.min_state_ms)
+    if config.buttons.min_state_ms < 0:
+        raise ConfigError("buttons.min_state_ms can't be negative")
 
 
 def _require_type(name: str, value: object, expected: type) -> None:
