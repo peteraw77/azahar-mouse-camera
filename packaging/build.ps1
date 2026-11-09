@@ -27,6 +27,10 @@ Set-Location $root
     (Join-Path $PSScriptRoot 'launcher.py')
 if ($LASTEXITCODE -ne 0) { throw "PyInstaller failed with exit code $LASTEXITCODE" }
 
+# PyInstaller leaves an unfinished copy of the exe in its work folder. It looks like
+# the real thing, but it can't start without _internal, so don't leave it to be found.
+Remove-Item (Join-Path $root "build\$name\$name.exe")
+
 Copy-Item (Join-Path $root 'config.toml'), (Join-Path $root 'README.md'), (Join-Path $root 'LICENSE') $output
 Copy-Item (Join-Path $PSScriptRoot 'bind.bat'), (Join-Path $PSScriptRoot 'calibrate.bat') $output
 
